@@ -12,12 +12,15 @@ pub const AdjacencyList = struct {
     allocator: std.mem.Allocator,
 
     pub fn init(allocator: std.mem.Allocator, count: u16, generatorType: ?ListGenerator.Type) !AdjacencyList {
+        // Allocate array of pointers (and set them to null, because they may have nonzero values in them already)
         var vertices = try allocator.alloc(?*DestNode, count);
         std.mem.set(?*DestNode, vertices, null);
+
         var list = AdjacencyList{
             .vertices = vertices,
             .allocator = allocator,
         };
+
         if (generatorType) |generation| {
             switch (generation) {
                 .complete => try ListGenerator.complete_gen(&list),
@@ -29,7 +32,7 @@ pub const AdjacencyList = struct {
     }
 
     pub fn deinit(self: *AdjacencyList) void {
-        // Free the linkedlists
+        // Free the nodes in the linkedlist of each vertice
         for (self.vertices) |head| {
             var current = head;
             while (current) |node| {
@@ -39,7 +42,6 @@ pub const AdjacencyList = struct {
             }
         }
 
-        // Free the array
         self.allocator.free(self.vertices);
     }
 
@@ -55,11 +57,10 @@ pub const AdjacencyList = struct {
             return AccessError.IdxBOutOfBounds;
         }
 
-        // Allocate the necessary memory
         var nodeA = try self.allocator.create(DestNode);
         var nodeB = try self.allocator.create(DestNode);
 
-        // Assign the nodes to their destination, and the existing item in the linkedlist
+        // Assign the nodes to their destination...
         nodeA.* = .{
             .id = b,
             .next = self.vertices[a],
@@ -69,7 +70,7 @@ pub const AdjacencyList = struct {
             .next = self.vertices[b],
         };
 
-        // Replace the existing linkedlist destination head with the newly created nodes
+        //...and replace the existing head of the origin's linkedlist
         self.vertices[a] = nodeA;
         self.vertices[b] = nodeB;
     }
@@ -93,6 +94,7 @@ pub const ListGenerator = struct {
     pub const Type = enum { complete, cycle, random };
 
     fn complete_gen(list: *AdjacencyList) !void {
+        // Connect the edges by choosing the origin node, and creating edges between it and every node ahead of it
         var vA: u16 = 0;
         while (vA < list.vertices.len - 1) : (vA += 1) {
             var vB: u16 = vA + 1;
@@ -103,10 +105,13 @@ pub const ListGenerator = struct {
     }
 
     fn cycle_gen(list: *AdjacencyList) !void {
-        try list.insertEdge(0, @intCast(u16, list.vertices.len - 1));
+        // Create a cycle between every vertice, by connecting it to the vertice @id + 1
         var v: u16 = 0;
         while (v < list.vertices.len - 1) : (v += 1) {
             try list.insertEdge(v, v + 1);
         }
+
+        // The first (@0) and last (@vertices.len) vertices are only connected to 1 vertice, so connect those two together
+        try list.insertEdge(0, @intCast(u16, list.vertices.len - 1));
     }
 };
