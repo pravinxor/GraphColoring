@@ -11,13 +11,21 @@ pub const AdjacencyList = struct {
     vertices: []?*DestNode,
     allocator: std.mem.Allocator,
 
-    pub fn init(allocator: std.mem.Allocator, count: u16) !AdjacencyList {
+    pub fn init(allocator: std.mem.Allocator, count: u16, generatorType: ?ListGenerator.Type) !AdjacencyList {
         var vertices = try allocator.alloc(?*DestNode, count);
         std.mem.set(?*DestNode, vertices, null);
-        return AdjacencyList{
+        var list = AdjacencyList{
             .vertices = vertices,
             .allocator = allocator,
         };
+        if (generatorType) |generation| {
+            switch (generation) {
+                .complete => {},
+                .cycle => try ListGenerator.cycle_gen(&list),
+                .random => {},
+            }
+        }
+        return list;
     }
 
     pub fn deinit(self: *AdjacencyList) void {
@@ -66,7 +74,7 @@ pub const AdjacencyList = struct {
         self.vertices[b] = nodeB;
     }
 
-    pub fn print(self: *AdjacencyList, writer: anytype) !void {
+    pub fn print(self: AdjacencyList, writer: anytype) !void {
         try writer.print("# Vertices: {}\n", .{self.vertices.len});
 
         for (self.vertices) |head, vertice| {
@@ -77,6 +85,18 @@ pub const AdjacencyList = struct {
                 current = node.next;
             }
             try writer.print("{c}", .{'\n'});
+        }
+    }
+};
+
+pub const ListGenerator = struct {
+    pub const Type = enum { complete, cycle, random };
+
+    fn cycle_gen(list: *AdjacencyList) !void {
+        try list.insertEdge(0, @intCast(u16, list.vertices.len - 1));
+        var v: u16 = 0;
+        while (v < list.vertices.len - 1) : (v += 1) {
+            try list.insertEdge(v, v + 1);
         }
     }
 };
