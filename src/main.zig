@@ -17,8 +17,19 @@ test "inserting edges into the adjacency list" {
     try list.insertEdge(0, 4);
 }
 
-test "print function" {
+test "cycle graph generator" {
     var list = try ajlist.AdjacencyList.init(std.testing.allocator, 5, ajlist.ListGenerator.Type.cycle);
+    defer list.deinit();
+
+    var buf = std.ArrayList(u8).init(std.testing.allocator);
+    defer buf.deinit();
+
+    try list.print(buf.writer());
+    std.debug.print("{c}{s}", .{ '\n', buf.items });
+}
+
+test "complete graph generator" {
+    var list = try ajlist.AdjacencyList.init(std.testing.allocator, 5, ajlist.ListGenerator.Type.complete);
     defer list.deinit();
 
     var buf = std.ArrayList(u8).init(std.testing.allocator);

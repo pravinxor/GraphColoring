@@ -20,7 +20,7 @@ pub const AdjacencyList = struct {
         };
         if (generatorType) |generation| {
             switch (generation) {
-                .complete => {},
+                .complete => try ListGenerator.complete_gen(&list),
                 .cycle => try ListGenerator.cycle_gen(&list),
                 .random => {},
             }
@@ -91,6 +91,16 @@ pub const AdjacencyList = struct {
 
 pub const ListGenerator = struct {
     pub const Type = enum { complete, cycle, random };
+
+    fn complete_gen(list: *AdjacencyList) !void {
+        var vA: u16 = 0;
+        while (vA < list.vertices.len - 1) : (vA += 1) {
+            var vB: u16 = vA + 1;
+            while (vB < list.vertices.len) : (vB += 1) {
+                try list.insertEdge(vA, vB);
+            }
+        }
+    }
 
     fn cycle_gen(list: *AdjacencyList) !void {
         try list.insertEdge(0, @intCast(u16, list.vertices.len - 1));
