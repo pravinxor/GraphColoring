@@ -1,21 +1,7 @@
 const std = @import("std");
 const ajlist = @import("adjacencylist.zig");
 
-pub fn main() !void {
-    // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
-
-    // stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
-
-    try stdout.print("Run `zig build test` to run the tests.\n", .{});
-
-    try bw.flush(); // don't forget to flush!
-}
+pub fn main() !void {}
 
 test "initialize adjacency list" {
     var list = try ajlist.AdjacencyList.init(std.testing.allocator, 5);
@@ -29,4 +15,20 @@ test "inserting edges into the adjacency list" {
     try list.insertEdge(1, 2);
     try list.insertEdge(2, 3);
     try list.insertEdge(0, 4);
+}
+
+test "print function" {
+    var list = try ajlist.AdjacencyList.init(std.testing.allocator, 5);
+    defer list.deinit();
+
+    try list.insertEdge(1, 2);
+    try list.insertEdge(2, 3);
+    try list.insertEdge(0, 4);
+
+    const stdout_file = std.io.getStdOut().writer();
+    var bw = std.io.bufferedWriter(stdout_file);
+    const stdout = bw.writer();
+
+    try list.print(stdout);
+    try bw.flush();
 }

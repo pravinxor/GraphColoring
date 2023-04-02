@@ -65,4 +65,18 @@ pub const AdjacencyList = struct {
         self.vertices[a] = nodeA;
         self.vertices[b] = nodeB;
     }
+
+    pub fn print(self: *AdjacencyList, writer: anytype) !void {
+        try writer.print("# Vertices: {}\n", .{self.vertices.len});
+
+        for (self.vertices) |head, vertice| {
+            try writer.print("V{} ->", .{vertice});
+            var current = head;
+            while (current) |node| {
+                try writer.print(" {}", .{node.id});
+                current = node.next;
+            }
+            try writer.print("{c}", .{'\n'});
+        }
+    }
 };
