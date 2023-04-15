@@ -45,17 +45,33 @@ pub const AdjacencyList = struct {
         self.allocator.free(self.vertices);
     }
 
-    const AccessError = error{ IdxAOutOfBounds, IdxBOutOfBounds };
-
-    /// Inserts @DestNode in both indices of @AdjacencyList.vertices, connected by @a and @b
-    /// Note: This does NOT check if the edge has already been inserted
-    pub fn insertEdge(self: *AdjacencyList, a: u16, b: u16) !void {
-        // Check to make sure the vertices are actually available
+    /// Returns an error if the ids are not in the correct bounds. Returns nothing on success
+    /// Used to determine if the vertices (a and b) are actually in the AdjacencyList
+    fn check_ids(self: *AdjacencyList, a: u16, b: u16) !void {
         if (a < 0 or a >= self.vertices.len) {
             return AccessError.IdxAOutOfBounds;
         } else if (b < 0 or b >= self.vertices.len) {
             return AccessError.IdxBOutOfBounds;
         }
+    }
+
+    const AccessError = error{ IdxAOutOfBounds, IdxBOutOfBounds };
+    pub fn containsEdge(self: *AdjacencyList, a: u16, b: u16) bool {
+        try self.check_ids(a, b);
+
+        var node = self.vertices[a];
+        while (node) |current| {
+            if (current == b) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Inserts @DestNode in both indices of @AdjacencyList.vertices, connected by @a and @b
+    /// Note: This does NOT check if the edge has already been inserted
+    pub fn insertEdge(self: *AdjacencyList, a: u16, b: u16) !void {
+        try self.check_ids(a, b);
 
         var nodeA = try self.allocator.create(DestNode);
         var nodeB = try self.allocator.create(DestNode);
