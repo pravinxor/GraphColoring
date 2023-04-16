@@ -6,6 +6,8 @@ pub fn main() !void {}
 test "initialize adjacency list" {
     var list = try ajlist.AdjacencyList.init(std.testing.allocator, 5, null, null);
     defer list.deinit();
+    var writer = std.io.getStdErr().writer();
+    try list.print(&writer);
 }
 
 test "inserting edges into the adjacency list" {
@@ -15,37 +17,30 @@ test "inserting edges into the adjacency list" {
     try list.insertEdge(1, 2);
     try list.insertEdge(2, 3);
     try list.insertEdge(0, 4);
+    var writer = std.io.getStdErr().writer();
+    try list.print(&writer);
 }
 
 test "cycle graph generator" {
     var list = try ajlist.AdjacencyList.init(std.testing.allocator, 5, ajlist.ListGenerator.Type.cycle, null);
     defer list.deinit();
 
-    var buf = std.ArrayList(u8).init(std.testing.allocator);
-    defer buf.deinit();
-
-    try list.print(buf.writer());
-    std.debug.print("{c}{s}", .{ '\n', buf.items });
+    var writer = std.io.getStdErr().writer();
+    try list.print(&writer);
 }
 
 test "complete graph generator" {
     var list = try ajlist.AdjacencyList.init(std.testing.allocator, 5, ajlist.ListGenerator.Type.complete, null);
     defer list.deinit();
 
-    var buf = std.ArrayList(u8).init(std.testing.allocator);
-    defer buf.deinit();
-
-    try list.print(buf.writer());
-    std.debug.print("{c}{s}", .{ '\n', buf.items });
+    var writer = std.io.getStdErr().writer();
+    try list.print(&writer);
 }
 
 test "uniform graph generator" {
     var list = try ajlist.AdjacencyList.init(std.testing.allocator, 5, ajlist.ListGenerator.Type.random_uniform, 7);
     defer list.deinit();
 
-    var buf = std.ArrayList(u8).init(std.testing.allocator);
-    defer buf.deinit();
-
-    try list.print(buf.writer());
-    std.debug.print("{c}{s}", .{ '\n', buf.items });
+    var writer = std.io.getStdErr().writer();
+    try list.print(&writer);
 }
