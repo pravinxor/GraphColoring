@@ -106,10 +106,9 @@ pub const AdjacencyList = struct {
     pub fn print(self: *const AdjacencyList, writer: anytype) !void {
         try writer.print("# Vertices: {}\n", .{self.vertices.len});
         for (self.vertices) |head, vertice| {
-            try writer.print("V{} ->", .{vertice});
             var current = head;
             while (current) |node| {
-                try writer.print(" {}", .{node.id});
+                try writer.print("{}<->{} ", .{ vertice, node.id });
                 current = node.next;
             }
             try writer.print("{c}", .{'\n'});
