@@ -41,7 +41,6 @@ pub const AdjacencyList = struct {
                 current = next;
             }
         }
-
         self.allocator.free(self.vertices);
     }
 
@@ -103,7 +102,7 @@ pub const AdjacencyList = struct {
     }
     const Writer = std.fs.File.Writer;
 
-    pub fn print(self: *const AdjacencyList, writer: anytype) !void {
+    pub fn print(self: *const AdjacencyList, writer: *std.fs.File.Writer) !void {
         try writer.print("# Vertices: {}\n", .{self.vertices.len});
         for (self.vertices) |head, vertice| {
             var current = head;
@@ -114,6 +113,8 @@ pub const AdjacencyList = struct {
             try writer.print("{c}", .{'\n'});
         }
     }
+
+    //pub fn serialize(self: *const AdjacencyList, writer: *std.fs.File.Writer) void {}
 };
 
 pub const ListGenerator = struct {
