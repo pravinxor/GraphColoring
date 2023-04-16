@@ -23,9 +23,9 @@ pub const AdjacencyList = struct {
 
         if (generatorType) |generation| {
             switch (generation) {
-                .complete => try ListGenerator.complete_gen(&list),
-                .cycle => try ListGenerator.cycle_gen(&list),
-                .random_uniform => try ListGenerator.uniform_gen(&list, conflicts.?),
+                .complete => try ListGenerator.completeGen(&list),
+                .cycle => try ListGenerator.cycleGen(&list),
+                .random_uniform, .random_skewed => try ListGenerator.randomGen(&list, conflicts.?, generation),
             }
         }
         return list;
@@ -145,10 +145,10 @@ pub const AdjacencyList = struct {
 };
 
 pub const ListGenerator = struct {
-    pub const Type = enum { complete, cycle, random_uniform };
+    pub const Type = enum { complete, cycle, random_uniform, random_skewed };
     const GeneratorError = error{TooManyConflicts};
 
-    fn complete_gen(list: *AdjacencyList) !void {
+    fn completeGen(list: *AdjacencyList) !void {
         // Connect the edges by choosing the origin node, and creating edges between it and every node ahead of it
         var vA: u16 = 0;
         while (vA < list.vertices.len - 1) : (vA += 1) {
@@ -159,7 +159,7 @@ pub const ListGenerator = struct {
         }
     }
 
-    fn cycle_gen(list: *AdjacencyList) !void {
+    fn cycleGen(list: *AdjacencyList) !void {
         // Create a cycle between every vertice, by connecting it to the vertice @id + 1
         var v: u16 = 0;
         while (v < list.vertices.len - 1) : (v += 1) {
@@ -170,7 +170,14 @@ pub const ListGenerator = struct {
         try list.insertEdge(0, @intCast(u16, list.vertices.len - 1));
     }
 
-    fn uniform_gen(list: *AdjacencyList, conflicts: u32) !void {
+    /// Performs quadratic formula to solve x^2 + x - 2c = 0
+    /// returning the ceiling value
+    /// Used for computing the linear distribution over triangular numbers
+    fn tqsolve(c: u32) u16 {
+        return @floatToInt(u16, std.math.ceil(std.math.sqrt(4.0 * 2.0 * @intToFloat(f32, c) + 1.0) / 2.0 - 0.5));
+    }
+
+    fn randomGen(list: *AdjacencyList, conflicts: u32, generation_type: ListGenerator.Type) !void {
         if (conflicts > list.vertices.len * (list.vertices.len - 1) / 2) {
             return GeneratorError.TooManyConflicts;
         }
@@ -181,9 +188,21 @@ pub const ListGenerator = struct {
         while (i < conflicts) : (i += 1) {
             var vA: u16 = 0;
             var vB: u16 = 0;
+
             while (vA == vB or try list.containsEdge(vA, vB)) {
-                vA = rng.random().uintLessThan(u16, @intCast(u16, list.vertices.len));
-                vB = rng.random().uintLessThan(u16, @intCast(u16, list.vertices.len));
+                switch (generation_type) {
+                    .random_skewed => {
+                        const triangle = @intCast(u32, (list.vertices.len - 1) * (list.vertices.len - 1 + 1) / 2);
+                        const rA = rng.random().uintLessThan(u32, triangle);
+                        vA = tqsolve(rA);
+                        const rB = rng.random().uintLessThan(u32, triangle);
+                        vB = tqsolve(rB);
+                    },
+                    else => {
+                        vA = rng.random().uintLessThan(u16, @intCast(u16, list.vertices.len));
+                        vB = rng.random().uintLessThan(u16, @intCast(u16, list.vertices.len));
+                    },
+                }
             }
             try list.insertEdge(vA, vB);
         }

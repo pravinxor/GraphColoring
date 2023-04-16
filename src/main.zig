@@ -37,6 +37,12 @@ test "uniform random graph generator" {
     try list.print(&stderr);
 }
 
+test "skewed random graph generator" {
+    var list = try ajlist.AdjacencyList.init(std.testing.allocator, 5, ajlist.ListGenerator.Type.random_skewed, 7);
+    defer list.deinit();
+    try list.print(&stderr);
+}
+
 test "Serialization and Deserialization" {
     var list = try ajlist.AdjacencyList.init(std.testing.allocator, 4, ajlist.ListGenerator.Type.cycle, null);
     defer list.deinit();
