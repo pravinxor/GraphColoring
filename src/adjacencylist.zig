@@ -194,9 +194,9 @@ pub const ListGenerator = struct {
                     .random_skewed => {
                         const triangle = @intCast(u32, (list.vertices.len - 1) * (list.vertices.len - 1 + 1) / 2);
                         const rA = rng.random().uintLessThan(u32, triangle);
-                        vA = tqsolve(rA);
+                        vA = @intCast(u16, list.vertices.len) - 1 - tqsolve(rA);
                         const rB = rng.random().uintLessThan(u32, triangle);
-                        vB = tqsolve(rB);
+                        vB = @intCast(u16, list.vertices.len) - 1 - tqsolve(rB);
                     },
                     else => {
                         vA = rng.random().uintLessThan(u16, @intCast(u16, list.vertices.len));
