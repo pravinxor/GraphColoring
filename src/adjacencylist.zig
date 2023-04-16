@@ -47,7 +47,7 @@ pub const AdjacencyList = struct {
 
     /// Returns an error if the ids are not in the correct bounds. Returns nothing on success
     /// Used to determine if the vertices (a and b) are actually in the AdjacencyList
-    fn check_ids(self: *AdjacencyList, a: u16, b: u16) !void {
+    fn check_ids(self: *const AdjacencyList, a: u16, b: u16) !void {
         if (a < 0 or a >= self.vertices.len) {
             return AccessError.IdxAOutOfBounds;
         } else if (b < 0 or b >= self.vertices.len) {
@@ -56,7 +56,7 @@ pub const AdjacencyList = struct {
     }
 
     const AccessError = error{ IdxAOutOfBounds, IdxBOutOfBounds };
-    pub fn containsEdge(self: *AdjacencyList, a: u16, b: u16) !bool {
+    pub fn containsEdge(self: *const AdjacencyList, a: u16, b: u16) !bool {
         try self.check_ids(a, b);
 
         var node = self.vertices[a];
@@ -94,7 +94,7 @@ pub const AdjacencyList = struct {
         self.vertices[b] = nodeB;
     }
 
-    pub fn print(self: AdjacencyList, writer: anytype) !void {
+    pub fn print(self: *const AdjacencyList, writer: anytype) !void {
         try writer.print("# Vertices: {}\n", .{self.vertices.len});
 
         for (self.vertices) |head, vertice| {
