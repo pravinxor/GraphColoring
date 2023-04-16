@@ -25,7 +25,7 @@ pub const AdjacencyList = struct {
             switch (generation) {
                 .complete => try ListGenerator.completeGen(&list),
                 .cycle => try ListGenerator.cycleGen(&list),
-                .random_uniform, .random_skewed => try ListGenerator.randomGen(&list, conflicts.?, generation),
+                .random_uniform, .random_skewed, .random_square => try ListGenerator.randomGen(&list, conflicts.?, generation),
             }
         }
         return list;
@@ -145,7 +145,7 @@ pub const AdjacencyList = struct {
 };
 
 pub const ListGenerator = struct {
-    pub const Type = enum { complete, cycle, random_uniform, random_skewed };
+    pub const Type = enum { complete, cycle, random_uniform, random_skewed, random_square };
     const GeneratorError = error{TooManyConflicts};
 
     fn completeGen(list: *AdjacencyList) !void {
@@ -177,6 +177,10 @@ pub const ListGenerator = struct {
         return @floatToInt(u16, std.math.ceil(std.math.sqrt(4.0 * 2.0 * @intToFloat(f32, c) + 1.0) / 2.0 - 0.5));
     }
 
+    fn rdsquare(rnd: f32, less_than: u16) !u16 {
+        return @floatToInt(u16, std.math.pow(f32, rnd, 2) * @intToFloat(f32, less_than));
+    }
+
     fn randomGen(list: *AdjacencyList, conflicts: u32, generation_type: ListGenerator.Type) !void {
         if (conflicts > list.vertices.len * (list.vertices.len - 1) / 2) {
             return GeneratorError.TooManyConflicts;
@@ -191,7 +195,14 @@ pub const ListGenerator = struct {
 
             while (vA == vB or try list.containsEdge(vA, vB)) {
                 switch (generation_type) {
+                    .random_square => {
+                        const rA = rng.random().float(f32);
+                        vA = try rdsquare(rA, @intCast(u16, list.vertices.len));
+                        const rB = rng.random().float(f32);
+                        vB = try rdsquare(rB, @intCast(u16, list.vertices.len));
+                    },
                     .random_skewed => {
+                        // offset by -1, since the result is supposed to be an index in the array
                         const triangle = @intCast(u32, (list.vertices.len - 1) * (list.vertices.len - 1 + 1) / 2);
                         const rA = rng.random().uintLessThan(u32, triangle);
                         vA = @intCast(u16, list.vertices.len) - 1 - tqsolve(rA);
