@@ -64,12 +64,12 @@ pub const AdjacencyList = struct {
             swap(&a, &b);
         }
 
-        var node = self.vertices[a];
-        while (node) |current| {
-            if (current.id == b) {
+        var current = self.vertices[a];
+        while (current) |node| {
+            if (node.id == b) {
                 return true;
             }
-            node = current.next;
+            current = node.next;
         }
         return false;
     }
@@ -100,7 +100,6 @@ pub const AdjacencyList = struct {
         //...and replace the existing head of the origin's linkedlist
         self.vertices[a] = nodeA;
     }
-    const Writer = std.fs.File.Writer;
 
     pub fn print(self: *const AdjacencyList, writer: *std.fs.File.Writer) !void {
         try writer.print("# Vertices: {}\n", .{self.vertices.len});
@@ -114,7 +113,35 @@ pub const AdjacencyList = struct {
         }
     }
 
-    //pub fn serialize(self: *const AdjacencyList, writer: *std.fs.File.Writer) void {}
+    /// Serializes the structure of the @AdjacencyList and writes in the @writer
+    pub fn serialize(self: *const AdjacencyList, writer: anytype) !void {
+        try writer.writeIntNative(u16, @intCast(u16, self.vertices.len));
+        for (self.vertices) |head| {
+            var current = head;
+            while (current) |node| {
+                try writer.writeIntLittle(u16, @intCast(u16, node.id));
+                current = node.next;
+            }
+            try writer.writeIntLittle(u16, 0);
+        }
+    }
+
+    /// Deserializes the data from a @reader containing the structure of the @AdjacencyList
+    pub fn deserialize(allocator: std.mem.Allocator, reader: anytype) !AdjacencyList {
+        const order = try reader.readIntLittle(u16);
+        var list = try AdjacencyList.init(allocator, order, null, null);
+        var n: u16 = 0;
+        while (n < order) : (n += 1) {
+            while (true) {
+                const dest = try reader.readIntLittle(u16);
+                if (dest == 0) {
+                    break;
+                }
+                try list.insertEdge(n, dest);
+            }
+        }
+        return list;
+    }
 };
 
 pub const ListGenerator = struct {
