@@ -40,7 +40,7 @@ test "complete graph generator" {
 }
 
 test "uniform graph generator" {
-    var list = try ajlist.AdjacencyList.init(std.testing.allocator, 5, ajlist.ListGenerator.Type.random_uniform, 4);
+    var list = try ajlist.AdjacencyList.init(std.testing.allocator, 5, ajlist.ListGenerator.Type.random_uniform, 7);
     defer list.deinit();
 
     var buf = std.ArrayList(u8).init(std.testing.allocator);

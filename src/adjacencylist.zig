@@ -56,8 +56,14 @@ pub const AdjacencyList = struct {
     }
 
     const AccessError = error{ IdxAOutOfBounds, IdxBOutOfBounds };
-    pub fn containsEdge(self: *const AdjacencyList, a: u16, b: u16) !bool {
-        try self.check_ids(a, b);
+    pub fn containsEdge(self: *const AdjacencyList, id_a: u16, id_b: u16) !bool {
+        try self.check_ids(id_a, id_b);
+
+        var a = id_a;
+        var b = id_b;
+        if (a > b) {
+            swap(&a, &b);
+        }
 
         var node = self.vertices[a];
         while (node) |current| {
@@ -69,34 +75,36 @@ pub const AdjacencyList = struct {
         return false;
     }
 
+    fn swap(a: *u16, b: *u16) void {
+        var temp = a.*;
+        a.* = b.*;
+        b.* = temp;
+    }
     /// Inserts @DestNode in both indices of @AdjacencyList.vertices, connected by @a and @b
     /// Note: This does NOT check if the edge has already been inserted
-    pub fn insertEdge(self: *AdjacencyList, a: u16, b: u16) !void {
-        try self.check_ids(a, b);
+    pub fn insertEdge(self: *AdjacencyList, id_a: u16, id_b: u16) !void {
+        try self.check_ids(id_a, id_b);
+
+        var a = id_a;
+        var b = id_b;
+        if (a > b) {
+            swap(&a, &b);
+        }
 
         var nodeA = try self.allocator.create(DestNode);
-        errdefer self.allocator.destroy(nodeA);
-        var nodeB = try self.allocator.create(DestNode);
-        errdefer self.allocator.destroy(nodeB);
 
-        // Assign the nodes to their destination...
         nodeA.* = .{
             .id = b,
             .next = self.vertices[a],
         };
-        nodeB.* = .{
-            .id = a,
-            .next = self.vertices[b],
-        };
 
         //...and replace the existing head of the origin's linkedlist
         self.vertices[a] = nodeA;
-        self.vertices[b] = nodeB;
     }
+    const Writer = std.fs.File.Writer;
 
     pub fn print(self: *const AdjacencyList, writer: anytype) !void {
         try writer.print("# Vertices: {}\n", .{self.vertices.len});
-
         for (self.vertices) |head, vertice| {
             try writer.print("V{} ->", .{vertice});
             var current = head;
