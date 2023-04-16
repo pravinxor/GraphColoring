@@ -11,7 +11,7 @@ pub const AdjacencyList = struct {
     vertices: []?*DestNode,
     allocator: std.mem.Allocator,
 
-    pub fn init(allocator: std.mem.Allocator, count: u16, generatorType: ?ListGenerator.Type) !AdjacencyList {
+    pub fn init(allocator: std.mem.Allocator, count: u16, generatorType: ?ListGenerator.Type, conflicts: ?u32) !AdjacencyList {
         // Allocate array of pointers (and set them to null, because they may have nonzero values in them already)
         var vertices = try allocator.alloc(?*DestNode, count);
         std.mem.set(?*DestNode, vertices, null);
@@ -25,7 +25,7 @@ pub const AdjacencyList = struct {
             switch (generation) {
                 .complete => try ListGenerator.complete_gen(&list),
                 .cycle => try ListGenerator.cycle_gen(&list),
-                .random => {},
+                .random_uniform => try ListGenerator.uniform_gen(&list, conflicts.?),
             }
         }
         return list;
@@ -56,14 +56,15 @@ pub const AdjacencyList = struct {
     }
 
     const AccessError = error{ IdxAOutOfBounds, IdxBOutOfBounds };
-    pub fn containsEdge(self: *AdjacencyList, a: u16, b: u16) bool {
+    pub fn containsEdge(self: *AdjacencyList, a: u16, b: u16) !bool {
         try self.check_ids(a, b);
 
         var node = self.vertices[a];
         while (node) |current| {
-            if (current == b) {
+            if (current.id == b) {
                 return true;
             }
+            node = current.next;
         }
         return false;
     }
@@ -74,7 +75,9 @@ pub const AdjacencyList = struct {
         try self.check_ids(a, b);
 
         var nodeA = try self.allocator.create(DestNode);
+        errdefer self.allocator.destroy(nodeA);
         var nodeB = try self.allocator.create(DestNode);
+        errdefer self.allocator.destroy(nodeB);
 
         // Assign the nodes to their destination...
         nodeA.* = .{
@@ -107,7 +110,8 @@ pub const AdjacencyList = struct {
 };
 
 pub const ListGenerator = struct {
-    pub const Type = enum { complete, cycle, random };
+    pub const Type = enum { complete, cycle, random_uniform };
+    const GeneratorError = error{TooManyConflicts};
 
     fn complete_gen(list: *AdjacencyList) !void {
         // Connect the edges by choosing the origin node, and creating edges between it and every node ahead of it
@@ -129,5 +133,26 @@ pub const ListGenerator = struct {
 
         // The first (@0) and last (@vertices.len) vertices are only connected to 1 vertice, so connect those two together
         try list.insertEdge(0, @intCast(u16, list.vertices.len - 1));
+    }
+
+    fn uniform_gen(list: *AdjacencyList, conflicts: u32) !void {
+        if (conflicts > list.vertices.len * (list.vertices.len - 1) / 2) {
+            return GeneratorError.TooManyConflicts;
+        }
+        const seed = @truncate(u64, @bitCast(u128, std.time.nanoTimestamp()));
+        var rng = std.rand.DefaultPrng.init(seed);
+
+        var i: u32 = 0;
+        while (i < conflicts) : (i += 1) {
+            var vA: u16 = 0;
+            var vB: u16 = 0;
+            while (vA == vB or try list.containsEdge(vA, vB)) {
+                vA = rng.random().int(u16) % @intCast(u16, list.vertices.len);
+                std.debug.print("\nvA: {d}", .{vA});
+                vB = rng.random().int(u16) % @intCast(u16, list.vertices.len);
+                std.debug.print(" vB: {d}", .{vB});
+            }
+            try list.insertEdge(vA, vB);
+        }
     }
 };
