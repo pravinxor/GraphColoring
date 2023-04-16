@@ -182,8 +182,8 @@ pub const ListGenerator = struct {
             var vA: u16 = 0;
             var vB: u16 = 0;
             while (vA == vB or try list.containsEdge(vA, vB)) {
-                vA = rng.random().int(u16) % @intCast(u16, list.vertices.len);
-                vB = rng.random().int(u16) % @intCast(u16, list.vertices.len);
+                vA = rng.random().uintLessThan(u16, @intCast(u16, list.vertices.len));
+                vB = rng.random().uintLessThan(u16, @intCast(u16, list.vertices.len));
             }
             try list.insertEdge(vA, vB);
         }
