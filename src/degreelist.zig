@@ -12,7 +12,7 @@ pub const DegreeList = struct {
 
     pub fn init(allocator: std.mem.Allocator, size: u16) !void {
         var degrees = try allocator.alloc(?*VerticeNode, size);
-
+        std.mem.set(?*VerticeNode, degrees, null);
         return DegreeList{ .degrees = degrees, .allocator = allocator };
     }
 

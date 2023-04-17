@@ -58,15 +58,9 @@ pub const AdjacencyList = struct {
     pub fn containsEdge(self: *const AdjacencyList, id_a: u16, id_b: u16) !bool {
         try self.check_ids(id_a, id_b);
 
-        var a = id_a;
-        var b = id_b;
-        if (a > b) {
-            swap(&a, &b);
-        }
-
-        var current = self.vertices[a];
+        var current = self.vertices[id_a];
         while (current) |node| {
-            if (node.id == b) {
+            if (node.id == id_b) {
                 return true;
             }
             current = node.next;
@@ -74,31 +68,29 @@ pub const AdjacencyList = struct {
         return false;
     }
 
-    fn swap(a: *u16, b: *u16) void {
-        var temp = a.*;
-        a.* = b.*;
-        b.* = temp;
-    }
     /// Inserts @DestNode in both indices of @AdjacencyList.vertices, connected by @a and @b
     /// Note: This does NOT check if the edge has already been inserted
     pub fn insertEdge(self: *AdjacencyList, id_a: u16, id_b: u16) !void {
         try self.check_ids(id_a, id_b);
 
-        var a = id_a;
-        var b = id_b;
-        if (a > b) {
-            swap(&a, &b);
-        }
-
         var nodeA = try self.allocator.create(DestNode);
+        errdefer self.allocator.destroy(nodeA);
+        var nodeB = try self.allocator.create(DestNode);
+        errdefer self.allocator.destroy(nodeB);
 
         nodeA.* = .{
-            .id = b,
-            .next = self.vertices[a],
+            .id = id_b,
+            .next = self.vertices[id_a],
+        };
+
+        nodeB.* = .{
+            .id = id_a,
+            .next = self.vertices[id_b],
         };
 
         //...and replace the existing head of the origin's linkedlist
-        self.vertices[a] = nodeA;
+        self.vertices[id_a] = nodeA;
+        self.vertices[id_b] = nodeB;
     }
 
     pub fn print(self: *const AdjacencyList, writer: *std.fs.File.Writer) !void {
@@ -116,12 +108,15 @@ pub const AdjacencyList = struct {
     /// Serializes the structure of the @AdjacencyList and writes in the @writer
     pub fn serialize(self: *const AdjacencyList, writer: anytype) !void {
         try writer.writeIntNative(u16, @intCast(u16, self.vertices.len));
-        for (self.vertices) |head| {
+        for (self.vertices) |head, vertice| {
             var current = head;
             while (current) |node| {
-                try writer.writeIntLittle(u16, @intCast(u16, node.id));
+                if (node.id > vertice) {
+                    try writer.writeIntLittle(u16, @intCast(u16, node.id));
+                }
                 current = node.next;
             }
+            // Seperator between each vertice's adjacency list
             try writer.writeIntLittle(u16, 0);
         }
     }
