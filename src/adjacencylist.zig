@@ -1,6 +1,10 @@
 const std = @import("std");
 
 pub const AdjacencyList = struct {
+    const Vertice = struct {
+        degree: u16,
+        edges: ?*DestNode,
+    };
     const DestNode = struct {
         /// The vertice id, which points back to its location in @AdjacencyList.vertices
         id: u16,
@@ -8,13 +12,16 @@ pub const AdjacencyList = struct {
     };
 
     /// An array of linkedlists, where each index corresponds to the id of the vertice
-    vertices: []?*DestNode,
+    vertices: []Vertice,
     allocator: std.mem.Allocator,
 
     pub fn init(allocator: std.mem.Allocator, count: u16, generatorType: ?ListGenerator.Type, conflicts: ?u32) !AdjacencyList {
         // Allocate array of pointers (and set them to null, because they may have nonzero values in them already)
-        var vertices = try allocator.alloc(?*DestNode, count);
-        std.mem.set(?*DestNode, vertices, null);
+        var vertices = try allocator.alloc(Vertice, count);
+        std.mem.set(Vertice, vertices, Vertice{
+            .degree = 0,
+            .edges = null,
+        });
 
         var list = AdjacencyList{
             .vertices = vertices,
@@ -33,8 +40,8 @@ pub const AdjacencyList = struct {
 
     pub fn deinit(self: *AdjacencyList) void {
         // Free the nodes in the linkedlist of each vertice
-        for (self.vertices) |head| {
-            var current = head;
+        for (self.vertices) |vertice| {
+            var current = vertice.edges;
             while (current) |node| {
                 var next = node.next;
                 self.allocator.destroy(node);
@@ -58,7 +65,7 @@ pub const AdjacencyList = struct {
     pub fn containsEdge(self: *const AdjacencyList, id_a: u16, id_b: u16) !bool {
         try self.check_ids(id_a, id_b);
 
-        var current = self.vertices[id_a];
+        var current = self.vertices[id_a].edges;
         while (current) |node| {
             if (node.id == id_b) {
                 return true;
@@ -80,25 +87,30 @@ pub const AdjacencyList = struct {
 
         nodeA.* = .{
             .id = id_b,
-            .next = self.vertices[id_a],
+            .next = self.vertices[id_a].edges,
         };
 
         nodeB.* = .{
             .id = id_a,
-            .next = self.vertices[id_b],
+            .next = self.vertices[id_b].edges,
         };
 
         //...and replace the existing head of the origin's linkedlist
-        self.vertices[id_a] = nodeA;
-        self.vertices[id_b] = nodeB;
+        self.vertices[id_a].edges = nodeA;
+        self.vertices[id_a].degree += 1;
+
+        self.vertices[id_b].edges = nodeB;
+        self.vertices[id_b].degree += 1;
     }
 
     pub fn print(self: *const AdjacencyList, writer: *std.fs.File.Writer) !void {
         try writer.print("# Vertices: {}\n", .{self.vertices.len});
-        for (self.vertices) |head, vertice| {
-            var current = head;
+        for (self.vertices) |vertice, vertice_id| {
+            try writer.print("[{}|{}°]", .{ vertice_id, vertice.degree });
+
+            var current = vertice.edges;
             while (current) |node| {
-                try writer.print("{}<->{} ", .{ vertice, node.id });
+                try writer.print("->{}", .{node.id});
                 current = node.next;
             }
             try writer.print("{c}", .{'\n'});
@@ -108,10 +120,10 @@ pub const AdjacencyList = struct {
     /// Serializes the structure of the @AdjacencyList and writes in the @writer
     pub fn serialize(self: *const AdjacencyList, writer: anytype) !void {
         try writer.writeIntNative(u16, @intCast(u16, self.vertices.len));
-        for (self.vertices) |head, vertice| {
-            var current = head;
+        for (self.vertices) |vertice, vertice_id| {
+            var current = vertice.edges;
             while (current) |node| {
-                if (node.id > vertice) {
+                if (node.id > vertice_id) {
                     try writer.writeIntLittle(u16, @intCast(u16, node.id));
                 }
                 current = node.next;
