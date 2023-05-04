@@ -1,27 +1,19 @@
 const std = @import("std");
+const vertice = @import("vertice.zig");
 
 pub const AdjacencyList = struct {
-    const Vertice = struct {
-        degree: u16,
-        edges: ?*DestNode,
-    };
-    const DestNode = struct {
-        /// The vertice id, which points back to its location in @AdjacencyList.vertices
-        id: u16,
-        next: ?*DestNode,
-    };
-
     /// An array of linkedlists, where each index corresponds to the id of the vertice
-    vertices: []Vertice,
+    vertices: []vertice.Node,
     allocator: std.mem.Allocator,
 
     pub fn init(allocator: std.mem.Allocator, count: u16, generatorType: ?ListGenerator.Type, conflicts: ?u32) !AdjacencyList {
         // Allocate array of pointers (and set them to null, because they may have nonzero values in them already)
-        var vertices = try allocator.alloc(Vertice, count);
-        std.mem.set(Vertice, vertices, Vertice{
-            .degree = 0,
-            .edges = null,
-        });
+        var vertices = try allocator.alloc(vertice.Node, count);
+        std.mem.set(vertice.Node, vertices, vertice.Node{ .id = 0, .degree = 0, .removed = false, .edges = null, .next = null, .prev = null });
+        var n: u16 = 0;
+        while (n < vertices.len) : (n += 1) {
+            vertices[n].id = n;
+        }
 
         var list = AdjacencyList{
             .vertices = vertices,
@@ -40,8 +32,8 @@ pub const AdjacencyList = struct {
 
     pub fn deinit(self: *AdjacencyList) void {
         // Free the nodes in the linkedlist of each vertice
-        for (self.vertices) |vertice| {
-            var current = vertice.edges;
+        for (self.vertices) |v| {
+            var current = v.edges;
             while (current) |node| {
                 var next = node.next;
                 self.allocator.destroy(node);
@@ -83,9 +75,9 @@ pub const AdjacencyList = struct {
     pub fn insertEdge(self: *AdjacencyList, id_a: u16, id_b: u16) !void {
         try self.check_ids(id_a, id_b);
 
-        var nodeA = try self.allocator.create(DestNode);
+        var nodeA = try self.allocator.create(vertice.Node.Dest);
         errdefer self.allocator.destroy(nodeA);
-        var nodeB = try self.allocator.create(DestNode);
+        var nodeB = try self.allocator.create(vertice.Node.Dest);
         errdefer self.allocator.destroy(nodeB);
 
         nodeA.* = .{
@@ -106,12 +98,23 @@ pub const AdjacencyList = struct {
         self.vertices[id_b].degree += 1;
     }
 
+    /// Removed the vertice at id from the adjacency list completely (and marks it as removed)
+    pub fn removeVertice(self: *AdjacencyList, id: u16) !void {
+        var vertex = self.vertices[id];
+
+        var current = vertex.edges;
+        while (current) |edge| {
+            var dest = &self.vertices[edge.id];
+            dest.degree -= 1;
+        }
+    }
+
     pub fn print(self: *const AdjacencyList, writer: *std.fs.File.Writer) !void {
         try writer.print("# Vertices: {}\n", .{self.vertices.len});
-        for (self.vertices) |vertice, vertice_id| {
-            try writer.print("[{}|{}°]", .{ vertice_id, vertice.degree });
+        for (self.vertices) |v| {
+            try writer.print("[{}|{}°]", .{ v.id, v.degree });
 
-            var current = vertice.edges;
+            var current = v.edges;
             while (current) |node| {
                 try writer.print("->{}", .{node.id});
                 current = node.next;
@@ -123,10 +126,10 @@ pub const AdjacencyList = struct {
     /// Serializes the structure of the @AdjacencyList and writes in the @writer
     pub fn serialize(self: *const AdjacencyList, writer: anytype) !void {
         try writer.writeIntNative(u16, @intCast(u16, self.vertices.len));
-        for (self.vertices) |vertice, vertice_id| {
-            var current = vertice.edges;
+        for (self.vertices) |v| {
+            var current = v.edges;
             while (current) |node| {
-                if (node.id > vertice_id) {
+                if (node.id > v.id) {
                     try writer.writeIntLittle(u16, @intCast(u16, node.id));
                 }
                 current = node.next;

@@ -1,5 +1,6 @@
 const std = @import("std");
 const ajlist = @import("adjacencylist.zig");
+const dlist = @import("degreelist.zig");
 var stderr = std.io.getStdErr().writer();
 
 pub fn main() !void {}
@@ -68,4 +69,23 @@ test "Serialization and Deserialization" {
     defer dserList.deinit();
 
     try dserList.print(&stderr);
+}
+
+test "DegreeList" {
+    const size = 5;
+    var adjacency_list = try ajlist.AdjacencyList.init(std.testing.allocator, size, ajlist.ListGenerator.Type.random_uniform, 7);
+    defer adjacency_list.deinit();
+
+    var degree_list = try dlist.DegreeList.init(std.testing.allocator, size);
+    defer degree_list.deinit();
+
+    var n: u16 = 0;
+    while (n < adjacency_list.vertices.len) : (n += 1) {
+        try degree_list.insert(adjacency_list.vertices[n].degree, &adjacency_list.vertices[n]);
+    }
+
+    try stderr.print("\nAdjacency List:\n", .{});
+    try adjacency_list.print(&stderr);
+    try stderr.print("DegreeList:\n", .{});
+    try degree_list.print(&stderr);
 }
