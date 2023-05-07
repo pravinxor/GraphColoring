@@ -1,5 +1,6 @@
 const std = @import("std");
 const vertice = @import("vertice.zig");
+const dlist = @import("degreelist.zig");
 
 pub const AdjacencyList = struct {
     /// An array of linkedlists, where each index corresponds to the id of the vertice
@@ -98,21 +99,31 @@ pub const AdjacencyList = struct {
         self.vertices[id_b].degree += 1;
     }
 
-    /// Removed the vertice at id from the adjacency list completely (and marks it as removed)
-    pub fn removeVertice(self: *AdjacencyList, id: u16) !void {
+    /// Remove the vertice at id from the adjacency list completely (and marks it as removed)
+    pub fn removeVertice(self: *AdjacencyList, degreelist: *dlist.DegreeList, id: u16) !void {
         var vertex = self.vertices[id];
-
+        vertex.removed = true;
         var current = vertex.edges;
         while (current) |edge| {
             var dest = &self.vertices[edge.id];
-            dest.degree -= 1;
+            if (!dest.removed) {
+                degreelist.remove(dest);
+                dest.degree -= 1;
+                try degreelist.insert(dest.degree, dest);
+            }
+            current = edge.next;
         }
     }
 
     pub fn print(self: *const AdjacencyList, writer: *std.fs.File.Writer) !void {
         try writer.print("# Vertices: {}\n", .{self.vertices.len});
         for (self.vertices) |v| {
-            try writer.print("[{}|{}°]", .{ v.id, v.degree });
+            try writer.print("[{}|{}°", .{ v.id, v.degree });
+            if (v.removed) {
+                try writer.print("X]", .{});
+            } else {
+                try writer.print(" ]", .{});
+            }
 
             var current = v.edges;
             while (current) |node| {

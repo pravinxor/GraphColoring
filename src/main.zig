@@ -1,6 +1,7 @@
 const std = @import("std");
 const ajlist = @import("adjacencylist.zig");
 const dlist = @import("degreelist.zig");
+const vertice = @import("vertice.zig");
 var stderr = std.io.getStdErr().writer();
 
 pub fn main() !void {}
@@ -88,4 +89,37 @@ test "DegreeList" {
     try adjacency_list.print(&stderr);
     try stderr.print("DegreeList:\n", .{});
     try degree_list.print(&stderr);
+}
+
+test "Ordering" {
+    const size = 5;
+    var adjacency_list = try ajlist.AdjacencyList.init(std.testing.allocator, size, ajlist.ListGenerator.Type.random_uniform, 7);
+    defer adjacency_list.deinit();
+    var degree_list = try dlist.DegreeList.init(std.testing.allocator, size);
+    defer degree_list.deinit();
+    var ordering = std.ArrayList(vertice.Node).init(std.testing.allocator);
+    defer ordering.deinit();
+
+    var n: u16 = 0;
+    while (n < adjacency_list.vertices.len) : (n += 1) {
+        std.debug.print("{}", .{n});
+        try degree_list.insert(adjacency_list.vertices[n].degree, &adjacency_list.vertices[n]);
+    }
+
+    var count_removed: u16 = 0;
+    while (count_removed < size) : (count_removed += 1) {
+        var smallest_vertex = degree_list.smallest_degree().?;
+        try adjacency_list.removeVertice(&degree_list, smallest_vertex.id);
+        degree_list.remove(smallest_vertex);
+        smallest_vertex.removed = true;
+        try ordering.append(smallest_vertex.*);
+    }
+    std.debug.print("{c}", .{'\n'});
+
+    var k: u16 = size;
+    while (k > 0) : (k -= 1) {
+        var vertex: vertice.Node = ordering.items[k - 1];
+        try stderr.print("[{} {}°] ", .{ vertex.id, vertex.degree });
+    }
+    std.debug.print("{c}", .{'\n'});
 }

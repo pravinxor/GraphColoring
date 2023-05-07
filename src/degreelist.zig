@@ -13,6 +13,16 @@ pub const DegreeList = struct {
 
     const InsertError = error{TaintedNode};
 
+    pub fn smallest_degree(self: *const DegreeList) ?*vertice.Node {
+        var n: u16 = 0;
+        while (n < self.degrees.len) : (n += 1) {
+            if (self.degrees[n]) |v| {
+                return v;
+            }
+        }
+        return null;
+    }
+
     /// Inserts a new vertice into the degree list. This function requires that the inserted vertice
     /// does not hold any existing data, besides its id, since it is overwritten
     pub fn insert(self: *DegreeList, degree: u16, v: *vertice.Node) !void {
@@ -41,7 +51,6 @@ pub const DegreeList = struct {
         }
         v.prev = null;
         v.next = null;
-        v.removed = true;
     }
 
     pub fn print(self: *const DegreeList, writer: *std.fs.File.Writer) !void {
@@ -51,7 +60,7 @@ pub const DegreeList = struct {
             var current = self.degrees[n];
             while (current) |v| {
                 if (v.prev) |_| {
-                    try writer.print("<->", .{});
+                    try writer.print(", ", .{});
                 }
                 try writer.print("{}", .{v.id});
                 current = v.next;
