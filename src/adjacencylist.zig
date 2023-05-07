@@ -114,7 +114,7 @@ pub const AdjacencyList = struct {
         }
     }
 
-    pub fn print(self: *const AdjacencyList, writer: *std.fs.File.Writer) !void {
+    pub fn print(self: *const AdjacencyList, writer: anytype) !void {
         try writer.print("# Vertices: {}\n", .{self.vertices.len});
         for (self.vertices) |v| {
             try writer.print("[{}|{}°", .{ v.id, v.degree });
