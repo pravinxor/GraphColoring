@@ -166,6 +166,13 @@ pub const AdjacencyList = struct {
         }
         return list;
     }
+
+    pub fn csv_stats(self: *const AdjacencyList, writer: *std.fs.File.Writer) !void {
+        try writer.print("vertice, degree{c}", .{'\n'});
+        for (self.vertices) |v| {
+            try writer.print("{}, {}{c}", .{ v.id, v.degree, '\n' });
+        }
+    }
 };
 
 pub const ListGenerator = struct {

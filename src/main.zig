@@ -91,6 +91,12 @@ test "DegreeList" {
     try degree_list.print(&stderr);
 }
 
+test "CSV graph stats" {
+    var list = try ajlist.AdjacencyList.init(std.testing.allocator, 5, ajlist.ListGenerator.Type.random_skewed, 7);
+    defer list.deinit();
+    try list.csv_stats(&stderr);
+}
+
 test "Ordering" {
     const size = 5;
     var adjacency_list = try ajlist.AdjacencyList.init(std.testing.allocator, size, ajlist.ListGenerator.Type.random_uniform, 7);
@@ -102,7 +108,6 @@ test "Ordering" {
 
     var n: u16 = 0;
     while (n < adjacency_list.vertices.len) : (n += 1) {
-        std.debug.print("{}", .{n});
         try degree_list.insert(adjacency_list.vertices[n].degree, &adjacency_list.vertices[n]);
     }
 

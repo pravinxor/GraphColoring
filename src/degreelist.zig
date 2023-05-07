@@ -23,8 +23,7 @@ pub const DegreeList = struct {
         return null;
     }
 
-    /// Inserts a new vertice into the degree list. This function requires that the inserted vertice
-    /// does not hold any existing data, besides its id, since it is overwritten
+    /// Inserts a new vertice into the degree list. This function requires that the inserted vertice does not hold any existing data, besides its id, since it is overwritten
     pub fn insert(self: *DegreeList, degree: u16, v: *vertice.Node) !void {
         if (v.prev != null or v.next != null) {
             return InsertError.TaintedNode;
@@ -38,8 +37,7 @@ pub const DegreeList = struct {
         self.degrees[degree] = v;
     }
 
-    /// Removes the specified vertice from the degreelist, and detatches its reference from other vertices
-    /// with the same degree
+    /// Removes the specified vertice from the degreelist, and detatches its reference from other vertices with the same degree
     pub fn remove(self: *DegreeList, v: *vertice.Node) void {
         if (v.prev) |prev| {
             prev.next = v.next;
