@@ -114,7 +114,7 @@ test "Ordering" {
     var count_removed: u16 = 0;
     while (count_removed < size) : (count_removed += 1) {
         var smallest_vertex = degree_list.smallest_degree().?;
-        try adjacency_list.removeVertice(&degree_list, smallest_vertex.id);
+        try adjacency_list.removeVertice(&degree_list, smallest_vertex);
         degree_list.remove(smallest_vertex);
         smallest_vertex.removed = true;
         try ordering.append(smallest_vertex.*);

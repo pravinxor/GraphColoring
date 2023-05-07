@@ -100,8 +100,7 @@ pub const AdjacencyList = struct {
     }
 
     /// Remove the vertice at id from the adjacency list completely (and marks it as removed)
-    pub fn removeVertice(self: *AdjacencyList, degreelist: *dlist.DegreeList, id: u16) !void {
-        var vertex = self.vertices[id];
+    pub fn removeVertice(self: *AdjacencyList, degreelist: *dlist.DegreeList, vertex: *vertice.Node) !void {
         vertex.removed = true;
         var current = vertex.edges;
         while (current) |edge| {
