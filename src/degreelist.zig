@@ -1,14 +1,21 @@
 const std = @import("std");
 const vertice = @import("vertice.zig");
+const adjlist = @import("adjacencylist.zig");
 /// An Array of Doubly-LinkedLists, indexed by degree
 pub const DegreeList = struct {
     degrees: []?*vertice.Node,
     allocator: std.mem.Allocator,
 
-    pub fn init(allocator: std.mem.Allocator, size: u16) !DegreeList {
-        var degrees = try allocator.alloc(?*vertice.Node, size);
+    pub fn init(allocator: std.mem.Allocator, adj: *const adjlist.AdjacencyList) !DegreeList {
+        var degrees = try allocator.alloc(?*vertice.Node, adj.vertices.len);
         std.mem.set(?*vertice.Node, degrees, null);
-        return DegreeList{ .degrees = degrees, .allocator = allocator };
+        var degree_list = DegreeList{ .degrees = degrees, .allocator = allocator };
+
+        var n: u16 = 0;
+        while (n < adj.vertices.len) : (n += 1) {
+            try degree_list.insert(adj.vertices[n].degree, &adj.vertices[n]);
+        }
+        return degree_list;
     }
 
     const InsertError = error{TaintedNode};

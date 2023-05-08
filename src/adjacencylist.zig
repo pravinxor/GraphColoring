@@ -10,7 +10,8 @@ pub const AdjacencyList = struct {
     pub fn init(allocator: std.mem.Allocator, count: u16, generatorType: ?ListGenerator.Type, conflicts: ?u32) !AdjacencyList {
         // Allocate array of pointers (and set them to null, because they may have nonzero values in them already)
         var vertices = try allocator.alloc(vertice.Node, count);
-        std.mem.set(vertice.Node, vertices, vertice.Node{ .id = 0, .degree = 0, .removed = false, .edges = null, .next = null, .prev = null });
+        std.mem.set(vertice.Node, vertices, vertice.Node{ .id = 0, .degree = 0, .removed = false, .edges = null, .next = null, .prev = null, .color = null });
+
         var n: u16 = 0;
         while (n < vertices.len) : (n += 1) {
             vertices[n].id = n;
@@ -48,7 +49,7 @@ pub const AdjacencyList = struct {
 
     /// Returns an error if the ids are not in the correct bounds. Returns nothing on success
     /// Used to determine if the vertices (a and b) are actually in the AdjacencyList
-    fn check_ids(self: *const AdjacencyList, a: u16, b: u16) !void {
+    fn checkIds(self: *const AdjacencyList, a: u16, b: u16) !void {
         if (a < 0 or a >= self.vertices.len) {
             return AccessError.IdxAOutOfBounds;
         } else if (b < 0 or b >= self.vertices.len) {
@@ -59,7 +60,7 @@ pub const AdjacencyList = struct {
     }
 
     pub fn containsEdge(self: *const AdjacencyList, id_a: u16, id_b: u16) !bool {
-        try self.check_ids(id_a, id_b);
+        try self.checkIds(id_a, id_b);
 
         var current = self.vertices[id_a].edges;
         while (current) |node| {
@@ -74,7 +75,7 @@ pub const AdjacencyList = struct {
     /// Inserts @DestNode in both indices of @AdjacencyList.vertices, connected by @a and @b
     /// Note: This does NOT check if the edge has already been inserted
     pub fn insertEdge(self: *AdjacencyList, id_a: u16, id_b: u16) !void {
-        try self.check_ids(id_a, id_b);
+        try self.checkIds(id_a, id_b);
 
         var nodeA = try self.allocator.create(vertice.Node.Dest);
         errdefer self.allocator.destroy(nodeA);
@@ -166,7 +167,7 @@ pub const AdjacencyList = struct {
         return list;
     }
 
-    pub fn csv_stats(self: *const AdjacencyList, writer: *std.fs.File.Writer) !void {
+    pub fn csvStats(self: *const AdjacencyList, writer: anytype) !void {
         try writer.print("vertice, degree{c}", .{'\n'});
         for (self.vertices) |v| {
             try writer.print("{}, {}{c}", .{ v.id, v.degree, '\n' });

@@ -3,6 +3,7 @@ const ajlist = @import("adjacencylist.zig");
 const dlist = @import("degreelist.zig");
 const vertice = @import("vertice.zig");
 const ordering = @import("ordering.zig");
+const colorizer = @import("colorizer.zig");
 var stderr = std.io.getStdErr().writer();
 
 pub fn main() !void {
@@ -117,9 +118,9 @@ test "DegreeList" {
     var degree_list = try dlist.DegreeList.init(std.testing.allocator, &adjacency_list);
     defer degree_list.deinit();
 
-    try stderr.print("\nAdjacency List:\n", .{});
+    std.debug.print("\nAdjacency List:\n", .{});
     try adjacency_list.print(&stderr);
-    try stderr.print("DegreeList:\n", .{});
+    std.debug.print("DegreeList:\n", .{});
     try degree_list.print(&stderr);
 }
 
@@ -138,12 +139,31 @@ test "SLVO" {
 
     var slvo = try ordering.smallestLastVertex(&adjacency_list, &degree_list, std.testing.allocator);
     defer std.testing.allocator.free(slvo);
-    std.debug.print("{c}", .{'\n'});
+    std.debug.print("\n", .{});
 
     var k: u16 = size;
     while (k > 0) : (k -= 1) {
         var vertex = slvo[k - 1];
-        try stderr.print("[{} {}°] ", .{ vertex.id, vertex.degree });
+        std.debug.print("[{} {}°] ", .{ vertex.id, vertex.degree });
     }
-    std.debug.print("{c}", .{'\n'});
+    std.debug.print("\n", .{});
+}
+
+test "SLVO Coloring" {
+    const size = 5;
+    var adjacency_list = try ajlist.AdjacencyList.init(std.testing.allocator, size, ajlist.ListGenerator.Type.cycle, 7);
+    defer adjacency_list.deinit();
+    var degree_list = try dlist.DegreeList.init(std.testing.allocator, &adjacency_list);
+    defer degree_list.deinit();
+    var slvo = try ordering.smallestLastVertex(&adjacency_list, &degree_list, std.testing.allocator);
+    defer std.testing.allocator.free(slvo);
+
+    try colorizer.greedy_coloring(slvo, &adjacency_list, std.testing.allocator);
+
+    std.debug.print("\n", .{});
+    try adjacency_list.print(&stderr);
+    for (adjacency_list.vertices) |v| {
+        std.debug.print("[{} C{}] ", .{ v.id, v.color.? });
+    }
+    std.debug.print("\n", .{});
 }

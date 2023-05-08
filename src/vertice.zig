@@ -11,4 +11,6 @@ pub const Node = struct {
     //Nodes, which are in the same degree of the current node
     prev: ?*Node,
     next: ?*Node,
+
+    color: ?u16,
 };
