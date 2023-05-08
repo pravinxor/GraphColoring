@@ -14,7 +14,6 @@ pub fn greedy_coloring(vertices: []*vertice.Node, adj: *const adjlist.AdjacencyL
         var current = v.edges;
         while (current) |node| {
             if (adj.vertices[node.id].color) |color| {
-                std.debug.print("\n{} has conflict {}C", .{ node.id, color });
                 available[color] = false;
             }
             current = node.next;
