@@ -31,14 +31,20 @@ pub fn main() !void {
         generator = ajlist.ListGenerator.Type.random_square;
     }
 
+    const start_time = std.time.nanoTimestamp();
     var list = try ajlist.AdjacencyList.init(allocator, vertices, generator, collisions);
     defer list.deinit();
+    const end_time = std.time.nanoTimestamp();
+    const elapsedTime = end_time - start_time;
 
     var action = args[4];
     if (std.mem.eql(u8, action, "print")) {
         try list.print(&writer);
     } else if (std.mem.eql(u8, action, "csv")) {
         try list.csvStats(&writer);
+    } else if (std.mem.eql(u8, action, "time")) {
+        // Time in μs
+        try writer.print("{}\n", .{@divExact(elapsedTime, 1000)});
     }
 
     try buf.flush();
@@ -149,9 +155,26 @@ test "SLVO" {
     std.debug.print("\n", .{});
 }
 
+test "SODL" {
+    const size = 5;
+    var adjacency_list = try ajlist.AdjacencyList.init(std.testing.allocator, size, ajlist.ListGenerator.Type.random_uniform, 7);
+    defer adjacency_list.deinit();
+    var degree_list = try dlist.DegreeList.init(std.testing.allocator, &adjacency_list);
+    defer degree_list.deinit();
+
+    var sodl = try ordering.smallestOriginalDegreeLast(&degree_list, size, std.testing.allocator);
+    defer std.testing.allocator.free(sodl);
+    std.debug.print("\n", .{});
+
+    for (sodl) |vertex| {
+        std.debug.print("[{} {}°] ", .{ vertex.id, vertex.degree });
+    }
+    std.debug.print("\n", .{});
+}
+
 test "SLVO Coloring" {
     const size = 5;
-    var adjacency_list = try ajlist.AdjacencyList.init(std.testing.allocator, size, ajlist.ListGenerator.Type.cycle, 7);
+    var adjacency_list = try ajlist.AdjacencyList.init(std.testing.allocator, size, ajlist.ListGenerator.Type.random_uniform, 7);
     defer adjacency_list.deinit();
     var degree_list = try dlist.DegreeList.init(std.testing.allocator, &adjacency_list);
     defer degree_list.deinit();
