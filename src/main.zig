@@ -147,11 +147,10 @@ test "SLVO" {
     defer std.testing.allocator.free(slvo);
     std.debug.print("\n", .{});
 
-    var k: u16 = size;
-    while (k > 0) : (k -= 1) {
-        var vertex = slvo[k - 1];
+    for (slvo) |vertex| {
         std.debug.print("[{} {}°] ", .{ vertex.id, vertex.degree });
     }
+
     std.debug.print("\n", .{});
 }
 
@@ -174,7 +173,7 @@ test "SODL" {
 
 test "SLVO Coloring" {
     const size = 5;
-    var adjacency_list = try ajlist.AdjacencyList.init(std.testing.allocator, size, ajlist.ListGenerator.Type.random_uniform, 7);
+    var adjacency_list = try ajlist.AdjacencyList.init(std.testing.allocator, size, ajlist.ListGenerator.Type.complete, 7);
     defer adjacency_list.deinit();
     var degree_list = try dlist.DegreeList.init(std.testing.allocator, &adjacency_list);
     defer degree_list.deinit();

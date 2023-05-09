@@ -13,8 +13,7 @@ pub fn smallestLastVertex(adj: *adjlist.AdjacencyList, degrees: *dlist.DegreeLis
         try adj.removeVertice(degrees, smallest_vertex);
         degrees.remove(smallest_vertex);
         smallest_vertex.removed = true;
-        ordering[count_removed] = smallest_vertex;
-        try adj.print(stderr);
+        ordering[adj.vertices.len - count_removed - 1] = smallest_vertex;
     }
     return ordering;
 }
