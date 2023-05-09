@@ -58,7 +58,7 @@ pub fn main() !void {
         try list.csvStats(o_writer);
     } else if (std.mem.eql(u8, args[4], "serialize")) {
         try list.serialize(o_writer);
-    } else if (std.mem.eql(u8, args[4], "silent")) {} else {
+    } else if (std.mem.eql(u8, args[4], "silent") or std.mem.eql(u8, args[4], "time")) {} else {
         std.log.err("Unrecognized option for args[4]: {s}", .{args[4]});
     }
     if (args.len > 4) {
