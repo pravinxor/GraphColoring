@@ -10,7 +10,7 @@ pub fn main() !void {
     const allocator = std.heap.c_allocator;
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
-    std.debug.print("Arguments: {s}\n", .{args});
+    std.log.info("Arguments: {s}\n", .{args});
 
     var o_buf = std.io.bufferedWriter(std.io.getStdOut().writer());
     var i_buf = std.io.bufferedReader(std.io.getStdIn().reader());
@@ -21,6 +21,7 @@ pub fn main() !void {
     defer list.deinit();
 
     if (std.mem.eql(u8, args[1], "read")) {
+        std.log.info("Reading graph from stdin", .{});
         list = try ajlist.AdjacencyList.deserialize(allocator, i_reader);
     } else {
         var vertices = try std.fmt.parseInt(u16, args[1], 10);
@@ -36,6 +37,8 @@ pub fn main() !void {
             generator = ajlist.ListGenerator.Type.random_skewed;
         } else if (std.mem.eql(u8, args[3], "qskewed")) {
             generator = ajlist.ListGenerator.Type.random_square;
+        } else {
+            std.log.err("Unrecognized option for args[3]: {s}", .{args[3]});
         }
 
         const start_time = std.time.nanoTimestamp();
@@ -55,6 +58,31 @@ pub fn main() !void {
         try list.csvStats(o_writer);
     } else if (std.mem.eql(u8, args[4], "serialize")) {
         try list.serialize(o_writer);
+    } else if (std.mem.eql(u8, args[4], "silent")) {} else {
+        std.log.err("Unrecognized option for args[4]: {s}", .{args[4]});
+    }
+    if (args.len > 4) {
+        if (std.mem.eql(u8, args[5], "coloring")) {
+            var degrees = try dlist.DegreeList.init(allocator, &list);
+            var order: []*vertice.Node = undefined;
+            if (std.mem.eql(u8, args[6], "slvo")) {
+                order = try ordering.smallestLastVertex(&list, &degrees, allocator);
+                try colorizer.greedyColoring(order, &list, allocator);
+                try o_writer.print("{}, {}\n", .{ colorizer.colorCount(&list), ordering.slvoTerminalCliqueSize(order) });
+            } else if (std.mem.eql(u8, args[6], "sodl")) {
+                order = try ordering.smallestOriginalDegreeLast(&degrees, @intCast(u16, list.vertices.len), allocator);
+                try colorizer.greedyColoring(order, &list, allocator);
+                try o_writer.print("{}\n", .{colorizer.colorCount(&list)});
+            } else {
+                std.log.err("Unrecognized option for args[6]: {s}", .{args[6]});
+            }
+            if (args.len > 7 and std.mem.eql(u8, args[7], "ordering")) {
+                for (order) |v| {
+                    std.debug.print("[{} C{}]", .{ v.id, v.color.? });
+                }
+                std.debug.print("\n", .{});
+            }
+        }
     }
     try o_buf.flush();
 }
@@ -206,7 +234,7 @@ test "SLVO Coloring" {
     var slvo = try ordering.smallestLastVertex(&adjacency_list, &degree_list, std.testing.allocator);
     defer std.testing.allocator.free(slvo);
 
-    try colorizer.greedy_coloring(slvo, &adjacency_list, std.testing.allocator);
+    try colorizer.greedyColoring(slvo, &adjacency_list, std.testing.allocator);
 
     std.debug.print("\n", .{});
     try adjacency_list.print(&stderr);

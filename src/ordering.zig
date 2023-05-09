@@ -18,6 +18,19 @@ pub fn smallestLastVertex(adj: *adjlist.AdjacencyList, degrees: *dlist.DegreeLis
     return ordering;
 }
 
+/// Returns the size of the terminal clique, for SLVO orderings
+pub fn slvoTerminalCliqueSize(vertices: []*vertice.Node) u16 {
+    var size: u16 = 0;
+    for (vertices) |v| {
+        if (v.color.? == size) {
+            size += 1;
+        } else {
+            break;
+        }
+    }
+    return size;
+}
+
 pub fn smallestOriginalDegreeLast(degrees: *const dlist.DegreeList, size: u16, allocator: std.mem.Allocator) ![]*vertice.Node {
     var ordering = try allocator.alloc(*vertice.Node, size);
     var k: u16 = 1;

@@ -3,7 +3,7 @@ const vertice = @import("vertice.zig");
 const adjlist = @import("adjacencylist.zig");
 
 /// Fills in the color property of the Nodes in @vertices based on the ordering that they are passed in with
-pub fn greedy_coloring(vertices: []*vertice.Node, adj: *const adjlist.AdjacencyList, allocator: std.mem.Allocator) !void {
+pub fn greedyColoring(vertices: []*vertice.Node, adj: *const adjlist.AdjacencyList, allocator: std.mem.Allocator) !void {
     var available = try allocator.alloc(bool, vertices.len);
     defer allocator.free(available);
 
@@ -25,4 +25,13 @@ pub fn greedy_coloring(vertices: []*vertice.Node, adj: *const adjlist.AdjacencyL
             }
         }
     }
+}
+
+/// Returns the total number of colors in the graph
+pub fn colorCount(list: *const adjlist.AdjacencyList) u16 {
+    var count: u16 = 0;
+    for (list.vertices) |v| {
+        count = @max(count, v.color.?);
+    }
+    return count + 1;
 }
