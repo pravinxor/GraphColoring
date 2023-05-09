@@ -171,6 +171,23 @@ test "SODL" {
     std.debug.print("\n", .{});
 }
 
+test "Random ordering" {
+    const size = 5;
+    var adjacency_list = try ajlist.AdjacencyList.init(std.testing.allocator, size, ajlist.ListGenerator.Type.random_uniform, 7);
+    defer adjacency_list.deinit();
+    var degree_list = try dlist.DegreeList.init(std.testing.allocator, &adjacency_list);
+    defer degree_list.deinit();
+
+    var random = try ordering.randomOrdering(&degree_list, size, std.testing.allocator);
+    defer std.testing.allocator.free(random);
+    std.debug.print("\n", .{});
+
+    for (random) |vertex| {
+        std.debug.print("[{} {}°] ", .{ vertex.id, vertex.degree });
+    }
+    std.debug.print("\n", .{});
+}
+
 test "SLVO Coloring" {
     const size = 5;
     var adjacency_list = try ajlist.AdjacencyList.init(std.testing.allocator, size, ajlist.ListGenerator.Type.complete, 7);

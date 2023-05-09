@@ -31,3 +31,27 @@ pub fn smallestOriginalDegreeLast(degrees: *const dlist.DegreeList, size: u16, a
     }
     return ordering;
 }
+
+pub fn randomOrdering(degrees: *const dlist.DegreeList, size: u16, allocator: std.mem.Allocator) ![]*vertice.Node {
+    var ordering = try allocator.alloc(?*vertice.Node, size);
+    std.mem.set(?*vertice.Node, ordering, null);
+
+    const seed = @truncate(u64, @bitCast(u128, std.time.nanoTimestamp()));
+    var rng = std.rand.DefaultPrng.init(seed);
+
+    for (degrees.degrees) |degree| {
+        var node = degree;
+        while (node) |n| {
+            var k: u16 = 0;
+            while (true) {
+                k = rng.random().uintLessThan(u16, @intCast(u16, ordering.len));
+                if (ordering[k] == null) {
+                    break;
+                }
+            }
+            ordering[k] = n;
+            node = n.next;
+        }
+    }
+    return @ptrCast([]*vertice.Node, ordering);
+}
