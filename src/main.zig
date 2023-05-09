@@ -12,42 +12,51 @@ pub fn main() !void {
     defer std.process.argsFree(allocator, args);
     std.debug.print("Arguments: {s}\n", .{args});
 
-    const out = std.io.getStdOut();
-    var buf = std.io.bufferedWriter(out.writer());
-    var writer = buf.writer();
+    var o_buf = std.io.bufferedWriter(std.io.getStdOut().writer());
+    var i_buf = std.io.bufferedReader(std.io.getStdIn().reader());
+    var o_writer = o_buf.writer();
+    var i_reader = i_buf.reader();
 
-    var vertices = try std.fmt.parseInt(u16, args[1], 10);
-    var collisions = try std.fmt.parseInt(u32, args[2], 10);
-    var generator: ?ajlist.ListGenerator.Type = null;
-    if (std.mem.eql(u8, args[3], "cycle")) {
-        generator = ajlist.ListGenerator.Type.cycle;
-    } else if (std.mem.eql(u8, args[3], "complete")) {
-        generator = ajlist.ListGenerator.Type.complete;
-    } else if (std.mem.eql(u8, args[3], "uniform")) {
-        generator = ajlist.ListGenerator.Type.random_uniform;
-    } else if (std.mem.eql(u8, args[3], "skewed")) {
-        generator = ajlist.ListGenerator.Type.random_skewed;
-    } else if (std.mem.eql(u8, args[3], "qskewed")) {
-        generator = ajlist.ListGenerator.Type.random_square;
-    }
-
-    const start_time = std.time.nanoTimestamp();
-    var list = try ajlist.AdjacencyList.init(allocator, vertices, generator, collisions);
+    var list: ajlist.AdjacencyList = undefined;
     defer list.deinit();
-    const end_time = std.time.nanoTimestamp();
-    const elapsedTime = end_time - start_time;
 
-    var action = args[4];
-    if (std.mem.eql(u8, action, "print")) {
-        try list.print(&writer);
-    } else if (std.mem.eql(u8, action, "csv")) {
-        try list.csvStats(&writer);
-    } else if (std.mem.eql(u8, action, "time")) {
-        // Time in μs
-        try writer.print("{}\n", .{@divExact(elapsedTime, 1000)});
+    if (std.mem.eql(u8, args[1], "read")) {
+        list = try ajlist.AdjacencyList.deserialize(allocator, i_reader);
+    } else {
+        var vertices = try std.fmt.parseInt(u16, args[1], 10);
+        var collisions = try std.fmt.parseInt(u32, args[2], 10);
+        var generator: ?ajlist.ListGenerator.Type = null;
+        if (std.mem.eql(u8, args[3], "cycle")) {
+            generator = ajlist.ListGenerator.Type.cycle;
+        } else if (std.mem.eql(u8, args[3], "complete")) {
+            generator = ajlist.ListGenerator.Type.complete;
+        } else if (std.mem.eql(u8, args[3], "uniform")) {
+            generator = ajlist.ListGenerator.Type.random_uniform;
+        } else if (std.mem.eql(u8, args[3], "skewed")) {
+            generator = ajlist.ListGenerator.Type.random_skewed;
+        } else if (std.mem.eql(u8, args[3], "qskewed")) {
+            generator = ajlist.ListGenerator.Type.random_square;
+        }
+
+        const start_time = std.time.nanoTimestamp();
+        list = try ajlist.AdjacencyList.init(allocator, vertices, generator, collisions);
+
+        const end_time = std.time.nanoTimestamp();
+        const elapsedTime = end_time - start_time;
+        if (std.mem.eql(u8, args[4], "time")) {
+            // Time in μs
+            try o_writer.print("{}\n", .{@divExact(elapsedTime, 1000)});
+        }
     }
 
-    try buf.flush();
+    if (std.mem.eql(u8, args[4], "print")) {
+        try list.print(o_writer);
+    } else if (std.mem.eql(u8, args[4], "csv")) {
+        try list.csvStats(o_writer);
+    } else if (std.mem.eql(u8, args[4], "serialize")) {
+        try list.serialize(o_writer);
+    }
+    try o_buf.flush();
 }
 
 test "initialize adjacency list" {
