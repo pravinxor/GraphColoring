@@ -73,6 +73,10 @@ pub fn main() !void {
                 order = try ordering.smallestOriginalDegreeLast(&degrees, @intCast(u16, list.vertices.len), allocator);
                 try colorizer.greedyColoring(order, &list, allocator);
                 try o_writer.print("{}\n", .{colorizer.colorCount(&list)});
+            } else if (std.mem.eql(u8, args[6], "random")) {
+                order = try ordering.randomOrdering(&degrees, @intCast(u16, list.vertices.len), allocator);
+                try colorizer.greedyColoring(order, &list, allocator);
+                try o_writer.print("{}\n", .{colorizer.colorCount(&list)});
             } else {
                 std.log.err("Unrecognized option for args[6]: {s}", .{args[6]});
             }
