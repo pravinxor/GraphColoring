@@ -18,6 +18,18 @@ pub fn smallestLastVertex(adj: *adjlist.AdjacencyList, degrees: *dlist.DegreeLis
     return ordering;
 }
 
+pub fn smallestFirstVertex(adj: *adjlist.AdjacencyList, degrees: *dlist.DegreeList, allocator: std.mem.Allocator) ![]*vertice.Node {
+    var ordering = try smallestLastVertex(adj, degrees, allocator);
+    var k: u16 = 0;
+
+    while (k < ordering.len / 2) : (k += 1) {
+        const temp = ordering[k];
+        ordering[k] = ordering[ordering.len - 1 - k];
+        ordering[ordering.len - 1 - k] = temp;
+    }
+    return ordering;
+}
+
 /// Returns the size of the terminal clique, for SLVO orderings
 pub fn slvoTerminalCliqueSize(vertices: []*vertice.Node) u16 {
     var size: u16 = 0;

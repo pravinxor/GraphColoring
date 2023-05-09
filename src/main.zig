@@ -46,7 +46,7 @@ pub fn main() !void {
 
         const end_time = std.time.nanoTimestamp();
         const elapsedTime = end_time - start_time;
-        if (std.mem.eql(u8, args[4], "time")) {
+        if (std.mem.eql(u8, args[4], "gen_time")) {
             // Time in μs
             try o_writer.print("{}\n", .{@divExact(elapsedTime, 1000)});
         }
@@ -58,29 +58,52 @@ pub fn main() !void {
         try list.csvStats(o_writer);
     } else if (std.mem.eql(u8, args[4], "serialize")) {
         try list.serialize(o_writer);
-    } else if (std.mem.eql(u8, args[4], "silent") or std.mem.eql(u8, args[4], "time")) {} else {
+    } else if (std.mem.eql(u8, args[4], "silent") or std.mem.eql(u8, args[4], "gen_time")) {} else {
         std.log.err("Unrecognized option for args[4]: {s}", .{args[4]});
     }
     if (args.len > 4) {
         if (std.mem.eql(u8, args[5], "coloring")) {
             var degrees = try dlist.DegreeList.init(allocator, &list);
             var order: []*vertice.Node = undefined;
+
+            var start_time: i128 = undefined;
+            var end_time: i128 = undefined;
             if (std.mem.eql(u8, args[6], "slvo")) {
+                start_time = std.time.nanoTimestamp();
                 order = try ordering.smallestLastVertex(&list, &degrees, allocator);
+                end_time = std.time.nanoTimestamp();
+
+                try colorizer.greedyColoring(order, &list, allocator);
+                try o_writer.print("{}, {}\n", .{ colorizer.colorCount(&list), ordering.slvoTerminalCliqueSize(order) });
+            } else if (std.mem.eql(u8, args[6], "sfvo")) {
+                start_time = std.time.nanoTimestamp();
+                order = try ordering.smallestFirstVertex(&list, &degrees, allocator);
+                end_time = std.time.nanoTimestamp();
+
                 try colorizer.greedyColoring(order, &list, allocator);
                 try o_writer.print("{}, {}\n", .{ colorizer.colorCount(&list), ordering.slvoTerminalCliqueSize(order) });
             } else if (std.mem.eql(u8, args[6], "sodl")) {
+                start_time = std.time.nanoTimestamp();
                 order = try ordering.smallestOriginalDegreeLast(&degrees, @intCast(u16, list.vertices.len), allocator);
+                end_time = std.time.nanoTimestamp();
+
                 try colorizer.greedyColoring(order, &list, allocator);
                 try o_writer.print("{}\n", .{colorizer.colorCount(&list)});
             } else if (std.mem.eql(u8, args[6], "random")) {
+                start_time = std.time.nanoTimestamp();
                 order = try ordering.randomOrdering(&degrees, @intCast(u16, list.vertices.len), allocator);
+                end_time = std.time.nanoTimestamp();
+
                 try colorizer.greedyColoring(order, &list, allocator);
                 try o_writer.print("{}\n", .{colorizer.colorCount(&list)});
             } else {
                 std.log.err("Unrecognized option for args[6]: {s}", .{args[6]});
             }
-            if (args.len > 7 and std.mem.eql(u8, args[7], "ordering")) {
+            if (args.len > 7 and std.mem.eql(u8, args[7], "order_time")) {
+                const elapsed_time = end_time - start_time;
+                try o_writer.print("{}\n", .{@divExact(elapsed_time, 1000)});
+            }
+            if (args.len > 8 and std.mem.eql(u8, args[8], "ordering")) {
                 for (order) |v| {
                     std.debug.print("[{} C{}]", .{ v.id, v.color.? });
                 }
